@@ -10,6 +10,7 @@ import com.kharchenko.productservice.product.models.DTOs.ProductDTO;
 import com.kharchenko.productservice.product.repositories.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +37,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductDTO createProduct(CreateProductDTO product) {
         return productMapper.productEntityToProductDTO(
                 productRepository.save(
@@ -77,44 +79,27 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductDTO updateProduct(CreateProductDTO createProductDTO, UUID id) {
 
         var productEntity = productRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + id));
 
-        var localProductEntity = productMapper.createProductDTOToProductEntity(createProductDTO);
-        localProductEntity.setId(id);
-
-        if (productEntity.equals(localProductEntity)) {
-            throw new ResourceBadRequestException(CHANGE_REQUIRED);
-        } else {
-
-            if (createProductDTO.getNumber() != null) {
-                productEntity.setNumber(createProductDTO.getNumber());
-            }
-            if (createProductDTO.getName() != null) {
-                productEntity.setName(createProductDTO.getName());
-            }
-            if (createProductDTO.getDescription() != null) {
-                productEntity.setDescription(createProductDTO.getDescription());
-            }
-            if (createProductDTO.getType() != null) {
-                productEntity.setType(createProductDTO.getType());
-            }
-            if (createProductDTO.getUnit() != null) {
-                productEntity.setUnit(createProductDTO.getUnit());
-            }
-            if (createProductDTO.getQuantity() != null) {
-                productEntity.setQuantity(createProductDTO.getQuantity());
-            }
-            productRepository.save(productEntity);
-        }
+        productEntity.setNumber(createProductDTO.getNumber());
+        productEntity.setName(createProductDTO.getName());
+        productEntity.setDescription(createProductDTO.getDescription());
+        productEntity.setType(createProductDTO.getType());
+        productEntity.setUnit(createProductDTO.getUnit());
+        productEntity.setQuantity(createProductDTO.getQuantity());
+        productEntity.setPrice(createProductDTO.getPrice());
+        productRepository.save(productEntity);
 
         return productMapper.productEntityToProductDTO(productEntity);
     }
 
     @Override
+    @Transactional
     public void deleteProduct(UUID id) {
         productRepository.deleteById(id);
     }

@@ -41,4 +41,7 @@ public class ProductEntity {
 
     @Column(name = "quantity", nullable = false, updatable = true)
     private Double quantity;
+
+    @Column(name = "price", nullable = false, updatable = true)
+    private Double price;
 }

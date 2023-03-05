@@ -21,4 +21,6 @@ public class CreateProductDTO {
     private ProductUnit unit;
     @JsonProperty("quantity")
     private Double quantity;
+    @JsonProperty("price")
+    private Double price;
 }

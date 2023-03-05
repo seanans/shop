@@ -4,7 +4,6 @@ import com.kharchenko.productservice.product.entities.ProductEntity;
 import com.kharchenko.productservice.product.models.DTOs.CreateProductDTO;
 import com.kharchenko.productservice.product.models.DTOs.ProductDTO;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import java.util.List;
 

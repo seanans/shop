@@ -19,7 +19,6 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-
     @GetMapping("")
     private List<ProductDTO> getAllProducts() {
         return productService.getAllProducts();

@@ -3,7 +3,6 @@ package com.kharchenko.productservice.product.services;
 import com.kharchenko.productservice.product.models.DTOs.CreateProductDTO;
 import com.kharchenko.productservice.product.models.DTOs.FilterDTO;
 import com.kharchenko.productservice.product.models.DTOs.ProductDTO;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.UUID;
