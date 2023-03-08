@@ -21,7 +21,6 @@ public class ProductServiceImpl implements ProductService {
 
     private static final String PRODUCT_NOT_FOUND = "Product was not found with id: ";
 
-    private static final String CHANGE_REQUIRED = "Changes required";
     private static final String FILTER_DATA_REQUIRED = "Can`t find Product without any filter";
 
     @Autowired
