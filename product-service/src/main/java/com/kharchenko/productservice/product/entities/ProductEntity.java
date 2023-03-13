@@ -27,10 +27,10 @@ public class ProductEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long number;
 
-    @Column(name = "name", unique = true, nullable = false, updatable = true)
+    @Column(name = "name", unique = true, nullable = false)
     private String name;
 
-    @Column(name = "description", nullable = true, updatable = true)
+    @Column(name = "description")
     private String description;
 
     @Enumerated(EnumType.ORDINAL)
@@ -39,9 +39,9 @@ public class ProductEntity {
     @Enumerated(EnumType.ORDINAL)
     private ProductUnit unit;
 
-    @Column(name = "quantity", nullable = false, updatable = true)
+    @Column(name = "quantity", nullable = false)
     private Double quantity;
 
-    @Column(name = "price", nullable = false, updatable = true)
+    @Column(name = "price", nullable = false)
     private Double price;
 }

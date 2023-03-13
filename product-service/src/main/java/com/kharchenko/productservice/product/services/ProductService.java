@@ -15,6 +15,8 @@ public interface ProductService {
 
     ProductDTO getProductByFilter(FilterDTO filter);
 
+    ProductDTO getProductById(UUID id);
+
     ProductDTO updateProduct(CreateProductDTO product, UUID id);
 
     void deleteProduct(UUID id);

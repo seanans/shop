@@ -44,7 +44,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
-    private ProductDTO getProductById(UUID id) {
+    @Override
+    public ProductDTO getProductById(UUID id) {
         var productEntity = productRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + id));

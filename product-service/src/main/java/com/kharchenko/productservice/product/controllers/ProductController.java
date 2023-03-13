@@ -24,6 +24,11 @@ public class ProductController {
         return productService.getAllProducts();
     }
 
+    @GetMapping("/search")
+    private ResponseEntity<ProductDTO> getProductById(@RequestParam(value = "id") UUID id) {
+        return new ResponseEntity<>(productService.getProductById(id), HttpStatus.OK);
+    }
+
     @PostMapping("")
     private ResponseEntity<ProductDTO> createProduct(@RequestBody CreateProductDTO product) {
         return new ResponseEntity<>(productService.createProduct(product), HttpStatus.CREATED);
