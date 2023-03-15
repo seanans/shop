@@ -155,7 +155,8 @@ public class CartServiceImpl implements CartService {
                             Void.class
                     );
 
-                    totalPrice += restProduct.getBody().getPrice() * quantity;
+                    totalPrice += restProduct.getBody().getPrice() * productCart.getOrderedQuantity();
+
                 }
             }
 
@@ -175,6 +176,7 @@ public class CartServiceImpl implements CartService {
         return cartDTO;
     }
 
+    //check addProductsToCart() before change!!!
     @Override
     public CartDTO getCartById(UUID id) {
         if (id == null) {
@@ -217,8 +219,137 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartDTO updateCart(CreateCartDTO cart, UUID id) {
-        return null;
+    public CartDTO addProductsToCart(CreateCartDTO cart, UUID id) {
+        if (cart.getProductCartDTOList() == null) {
+            throw new ResourceBadRequestException(EMPTY_CART);
+        }
+        RestTemplate restTemplate = new RestTemplate();
+        var cartEntity = cartRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(CART_NOT_FOUND));
+
+        cartRepository.save(cartEntity);
+        long totalPrice = cartEntity.getTotalPrice();
+        var createProductCartDTOS = cart.getProductCartDTOList();
+        var cartDTO = getCartById(id); //inner method usage
+        List<ProductCartDTO> productCartDTOList = new ArrayList<>(cartDTO.getProducts());
+        List<ProductCartEntity> productCartEntities = new ArrayList<>();
+        for (CreateProductCartDTO productCart : createProductCartDTOS) {
+            ResponseEntity<ProductDTO> restProduct =
+                    restTemplate.getForEntity(
+                            searchUrl + productCart.getProductId(),
+                            ProductDTO.class);
+            if (restProduct.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
+                throw new RuntimeException(PRODUCT_NOT_FOUND + productCart.getProductId());
+            } else {
+
+                if (restProduct.getBody().getQuantity() < productCart.getOrderedQuantity()) {
+                    throw new ResourceBadRequestException(A_LOT_OF_ORDERED_PRODUCTS + productCart.getProductId());
+
+                } else {
+
+                    var quantity = restProduct.getBody().getQuantity() - productCart.getOrderedQuantity();
+                    var productCartDTO = new ProductCartDTO(
+                            UUID.randomUUID(),
+                            restProduct.getBody().getId(),
+                            restProduct.getBody().getName(),
+                            productCart.getOrderedQuantity());
+                    productCartDTOList.add(productCartDTO);
+
+                    var productCartEntity = new ProductCartEntity();
+                    productCartEntity.setId(productCartDTO.getId());
+                    productCartEntity.setProductId(productCartDTO.getProductId());
+                    productCartEntity.setCart(cartEntity);
+                    productCartEntity.setOrderedQuantity(productCart.getOrderedQuantity());
+                    productCartEntities.add(productCartEntity);
+
+                    var createProductDTO = new CreateProductDTO(
+                            restProduct.getBody().getNumber(),
+                            restProduct.getBody().getName(),
+                            restProduct.getBody().getDescription(),
+                            restProduct.getBody().getType(),
+                            restProduct.getBody().getUnit(),
+                            quantity,
+                            restProduct.getBody().getPrice()
+                    );
+
+                    HttpEntity<CreateProductDTO> httpEntity = new HttpEntity<>(createProductDTO);
+                    restTemplate.exchange(
+                            updateUrl + productCartEntity.getProductId(),
+                            HttpMethod.PUT,
+                            httpEntity,
+                            Void.class
+                    );
+
+                    totalPrice += restProduct.getBody().getPrice() * productCart.getOrderedQuantity();
+                }
+            }
+        }
+        if (cart.getNumber() != null) {
+            cartEntity.setNumber(cart.getNumber());
+        }
+        cartEntity.setOrderedProducts(productCartEntities);
+        cartEntity.setTotalPrice(totalPrice);
+
+
+        cartRepository.save(cartEntity);
+
+
+        cartDTO.setId(cartEntity.getId());
+        cartDTO.setNumber(cartEntity.getNumber());
+        cartDTO.setTotalPrice(cartEntity.getTotalPrice());
+        cartDTO.setProducts(productCartDTOList);
+
+
+        return cartDTO;
+    }
+
+    @Override
+    @Transactional
+    public CartDTO removeProductsFromDTO(RemoveProductDTO cart, UUID id) {
+        if (cart.getProductsIds() == null) {
+            throw new ResourceBadRequestException("Add product to remove");
+        }
+        var cartEntity = cartRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(CART_NOT_FOUND));
+
+        RestTemplate restTemplate = new RestTemplate();
+        long totalPrice = 0;
+        List<ProductCartEntity> productCartEntities = new ArrayList<>(cartEntity.getOrderedProducts());
+        List<ProductCartEntity> cartEntities = new ArrayList<>();
+        cartEntity.setOrderedProducts(null);
+        cartRepository.save(cartEntity);
+        for (UUID uuid: cart.getProductsIds()) {
+            for (ProductCartEntity productCartEntity: productCartEntities) {
+                if (!productCartEntity.getId().equals(uuid)) {
+                    cartEntities.add(productCartEntity);
+                } else {
+                    productCartRepository.deleteById(productCartEntity.getId());
+                }
+            }
+        }
+        cartEntity.setOrderedProducts(cartEntities);
+        for (ProductCartEntity productCartEntity : cartEntities) {
+            ResponseEntity<ProductDTO> responseEntity = restTemplate.getForEntity(
+                    searchUrl + productCartEntity.getProductId(),
+                    ProductDTO.class);
+            totalPrice += productCartEntity.getOrderedQuantity() * responseEntity.getBody().getPrice();
+        }
+        cartEntity.setTotalPrice(totalPrice);
+        cartRepository.save(cartEntity);
+  /*
+        List<ProductCartDTO> productCartDTOList = new ArrayList<>();
+        for (ProductCartEntity productCartEntity : localProductCartEntities) {
+
+            var productCartDTO = new ProductCartDTO();
+            productCartDTO.setId(productCartEntity.getId());
+            productCartDTO.setProductId(productCartEntity.getProductId());
+            productCartDTO.setName(responseEntity.getBody().getName());
+            productCartDTO.setOrderedQuantity(productCartEntity.getOrderedQuantity());
+            productCartDTOList.add(productCartDTO);
+
+        }
+        cartDTO.setTotalPrice(totalPrice);
+        cartDTO.setProducts(productCartDTOList);
+*/
+        return getCartById(id);
     }
 
     @Override

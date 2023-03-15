@@ -2,6 +2,7 @@ package com.kharchenko.cartservice.cart.controllers;
 
 import com.kharchenko.cartservice.cart.models.DTO.CartDTO;
 import com.kharchenko.cartservice.cart.models.DTO.CreateCartDTO;
+import com.kharchenko.cartservice.cart.models.DTO.RemoveProductDTO;
 import com.kharchenko.cartservice.cart.services.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -33,9 +34,14 @@ public class CartController {
         return new ResponseEntity<>(cartService.createCart(cart), HttpStatus.CREATED);
     }
 
-    @PostMapping("/update")
-    private ResponseEntity<CartDTO> updateCart(@RequestParam(value = "id") UUID id, @RequestBody CreateCartDTO cart) {
-        return new ResponseEntity<>(cartService.updateCart(cart, id), HttpStatus.ACCEPTED);
+    @PostMapping("/addProducts")
+    private ResponseEntity<CartDTO> addProductsToCart(@RequestParam(value = "id") UUID id, @RequestBody CreateCartDTO cart) {
+        return new ResponseEntity<>(cartService.addProductsToCart(cart, id), HttpStatus.ACCEPTED);
+    }
+
+    @PostMapping("/removeProducts")
+    private ResponseEntity<CartDTO> removeProductsFromCart(@RequestParam(value = "id") UUID id, @RequestBody RemoveProductDTO cart) {
+        return new ResponseEntity<>(cartService.removeProductsFromDTO(cart, id), HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/delete")
