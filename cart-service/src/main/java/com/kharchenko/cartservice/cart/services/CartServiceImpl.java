@@ -8,6 +8,7 @@ import com.kharchenko.cartservice.cart.repositories.CartRepository;
 import com.kharchenko.cartservice.cart.repositories.ProductCartRepository;
 import com.kharchenko.cartservice.exceptoins.ResourceBadRequestException;
 import com.kharchenko.cartservice.exceptoins.ResourceNotFoundException;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -19,8 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -303,52 +306,35 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @Transactional
     public CartDTO removeProductsFromDTO(RemoveProductDTO cart, UUID id) {
-        if (cart.getProductsIds() == null) {
-            throw new ResourceBadRequestException("Add product to remove");
-        }
         var cartEntity = cartRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(CART_NOT_FOUND));
+        var orderedProducts = cartEntity.getOrderedProducts();
+        var uuidSet = new HashSet<>(cart.getProductsIds());
+        var products = orderedProducts
+                .stream()
+                .filter(productCartEntity -> !uuidSet.contains(productCartEntity.getId())).collect(Collectors.toList());
 
+        cartEntity.setOrderedProducts(products);
+        for (UUID uuid: uuidSet) {
+
+
+                productCartRepository.deleteById(uuid);
+
+        }
         RestTemplate restTemplate = new RestTemplate();
         long totalPrice = 0;
-        List<ProductCartEntity> productCartEntities = new ArrayList<>(cartEntity.getOrderedProducts());
-        List<ProductCartEntity> cartEntities = new ArrayList<>();
-        cartEntity.setOrderedProducts(null);
-        cartRepository.save(cartEntity);
-        for (UUID uuid: cart.getProductsIds()) {
-            for (ProductCartEntity productCartEntity: productCartEntities) {
-                if (!productCartEntity.getId().equals(uuid)) {
-                    cartEntities.add(productCartEntity);
-                } else {
-                    productCartRepository.deleteById(productCartEntity.getId());
-                }
+        for (ProductCartEntity product : products) {
+            ResponseEntity<ProductDTO> restProduct =
+                    restTemplate.getForEntity(
+                            searchUrl + product.getProductId(),
+                            ProductDTO.class);
+            if (restProduct.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
+                throw new RuntimeException(PRODUCT_NOT_FOUND + product.getProductId());
             }
-        }
-        cartEntity.setOrderedProducts(cartEntities);
-        for (ProductCartEntity productCartEntity : cartEntities) {
-            ResponseEntity<ProductDTO> responseEntity = restTemplate.getForEntity(
-                    searchUrl + productCartEntity.getProductId(),
-                    ProductDTO.class);
-            totalPrice += productCartEntity.getOrderedQuantity() * responseEntity.getBody().getPrice();
+            totalPrice += product.getOrderedQuantity() * restProduct.getBody().getPrice();
         }
         cartEntity.setTotalPrice(totalPrice);
         cartRepository.save(cartEntity);
-  /*
-        List<ProductCartDTO> productCartDTOList = new ArrayList<>();
-        for (ProductCartEntity productCartEntity : localProductCartEntities) {
-
-            var productCartDTO = new ProductCartDTO();
-            productCartDTO.setId(productCartEntity.getId());
-            productCartDTO.setProductId(productCartEntity.getProductId());
-            productCartDTO.setName(responseEntity.getBody().getName());
-            productCartDTO.setOrderedQuantity(productCartEntity.getOrderedQuantity());
-            productCartDTOList.add(productCartDTO);
-
-        }
-        cartDTO.setTotalPrice(totalPrice);
-        cartDTO.setProducts(productCartDTOList);
-*/
         return getCartById(id);
     }
 
@@ -356,5 +342,10 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public void deleteCart(UUID id) {
         cartRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteProductCart(UUID id) {
+        productCartRepository.deleteById(id);
     }
 }

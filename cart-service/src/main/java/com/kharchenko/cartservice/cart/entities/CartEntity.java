@@ -29,6 +29,7 @@ public class CartEntity {
     @Column(name = "total_price")
     private Long totalPrice;
 
-    @OneToMany(mappedBy = "cart", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+    @OneToMany(mappedBy = "cart", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE, CascadeType.DETACH})
     List<ProductCartEntity> orderedProducts;
 }
+//CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE,
